@@ -1,0 +1,94 @@
+# -----------------------------
+# Python
+# -----------------------------
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Packaging
+build/
+dist/
+*.egg-info/
+
+# -----------------------------
+# Secrets / Environment
+# -----------------------------
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.crt
+secrets/
+service_account.json
+credentials.json
+
+# -----------------------------
+# Logs
+# -----------------------------
+logs/
+*.log
+
+# -----------------------------
+# Local data / uploads
+# -----------------------------
+data/
+docs/uploads/
+*.csv
+*.sqlite
+*.db
+
+# Keep folder structure if needed
+!data/.gitkeep
+!logs/.gitkeep
+
+# -----------------------------
+# Qdrant / vector storage
+# -----------------------------
+qdrant_storage/
+storage/
+snapshots/
+
+# -----------------------------
+# Jupyter / notebooks
+# -----------------------------
+.ipynb_checkpoints/
+
+# -----------------------------
+# Streamlit
+# -----------------------------
+.streamlit/secrets.toml
+
+# -----------------------------
+# IDE / Editor
+# -----------------------------
+.vscode/
+.idea/
+
+# -----------------------------
+# OS files
+# -----------------------------
+.DS_Store
+Thumbs.db
+
+# -----------------------------
+# Testing / cache
+# -----------------------------
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+
+# -----------------------------
+# Temporary files
+# -----------------------------
+tmp/
+temp/
+*.tmp
