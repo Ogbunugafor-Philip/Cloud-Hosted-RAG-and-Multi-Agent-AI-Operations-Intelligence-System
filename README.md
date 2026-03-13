@@ -1,5 +1,7 @@
 # Cloud-Hosted-RAG-and-Multi-Agent-AI-Operations-Intelligence-System
 
+<img width="974" height="650" alt="Image" src="https://github.com/user-attachments/assets/bddcbb28-835c-4047-81f6-957f58775002" />
+
 
 ## Introduction
 Organizations generate large amounts of internal information every day through reports, policies, manuals, emails, and operational documents. Although these documents contain valuable knowledge, they are often stored in different systems and formats, which makes it difficult for employees to quickly find the information they need. Staff members frequently spend time searching through files, asking colleagues questions, or manually reviewing documents before they can make decisions or complete tasks.
@@ -68,22 +70,29 @@ xii. Cloud Deployment and Always on Execution: FastAPI runs as a service for API
 
  
 ## Implementation Phases
-Phase 1: Environment Setup
+### Phase 1: Environment Setup
 Phase 1 focuses on preparing the cloud workspace so the AI has a clean and isolated home. We will log in remotely and create a dedicated folder for our files. Then we will set up a Virtual Environment. This acts like a private bubble to keep the project tools like Python and FastAPI from getting mixed up with anything else on the system.
-1.1	SSH into VPS and create project folder structure
+
+#### 1.1	SSH into VPS and create project folder structure
 •	SSH into your cloud vps and run the below commands to create our project folders;
+```
 mkdir ai_ops_system
 cd ai_ops_system
 mkdir data docs scripts logs
- 
-1.2	Create and activate Python virtual environment
+```
+<img width="872" height="286" alt="Image" src="https://github.com/user-attachments/assets/5894aee0-55d5-43a5-a439-d259ec333e60" />
+
+#### 1.2	Create and activate Python virtual environment
 •	Now we create your isolated Python workspace. Run these two commands to build and enter your virtual environment. Run;
+```
 python3 -m venv venv
 source venv/bin/activate
- 
+```
+ <img width="781" height="191" alt="Image" src="https://github.com/user-attachments/assets/160390fa-d39d-403a-a661-c9a668ff5b57" />
 
-1.3	Create requirements.txt with all dependencies
+#### 1.3	Create requirements.txt with all dependencies
 •	Create a file named requirements.txt in your main folder. Use this command to add all the core libraries we need for the RAG system and AI agents. Paste the below inside it
+```
 fastapi
 uvicorn
 qdrant-client
@@ -97,26 +106,30 @@ streamlit
 python-dotenv
 pypdf
 python-docx
+```
 
-1.4	Install all dependencies
+#### 1.4	Install all dependencies
 •	Now, install all the tools we listed in your file. Run this command to start the installation.
+```
 pip install --upgrade pip
 pip install -r requirements.txt
- 
-Dependencies Installed
-	fastapi: A high-performance web framework for building APIs with Python.
-	uvicorn: An ASGI server that runs your FastAPI application.
-	qdrant-client: The official library to connect and talk to the Qdrant vector database.
-	sentence-transformers: A framework to turn text into math-based embeddings for semantic search.
-	langchain: A toolkit for chaining together LLMs, vector stores, and memory.
-	langchain-community: Community-contributed tools and integrations for the LangChain ecosystem.
-	langchain-openai: The specific connector used to link LangChain with OpenAI-compatible APIs like Cerebras.
-	pandas: A data analysis library used to clean and structure your document information.
-	ragas: A framework specifically designed to evaluate the quality of RAG pipelines.
-	streamlit: A tool to build and share interactive web dashboards for monitoring.
-	python-dotenv: A library that loads your secret API keys from a hidden file.
-	pypdf: A tool used to read and extract text from PDF documents.
-	python-docx: A library for reading and extracting text from Microsoft Word files.
+```
+<img width="975" height="382" alt="Image" src="https://github.com/user-attachments/assets/11252687-2c5c-42fd-b159-2c25cfbf527d" /> 
+
+##### Dependencies Installed
+- fastapi: A high-performance web framework for building APIs with Python.
+- uvicorn: An ASGI server that runs your FastAPI application.
+- qdrant-client: The official library to connect and talk to the Qdrant vector database.
+- sentence-transformers: A framework to turn text into math-based embeddings for semantic search.
+- langchain: A toolkit for chaining together LLMs, vector stores, and memory.
+- langchain-community: Community-contributed tools and integrations for the LangChain ecosystem.
+- langchain-openai: The specific connector used to link LangChain with OpenAI-compatible APIs like Cerebras.
+- pandas: A data analysis library used to clean and structure your document information.
+- ragas: A framework specifically designed to evaluate the quality of RAG pipelines.
+- streamlit: A tool to build and share interactive web dashboards for monitoring.
+- python-dotenv: A library that loads your secret API keys from a hidden file.
+- pypdf: A tool used to read and extract text from PDF documents.
+- python-docx: A library for reading and extracting text from Microsoft Word files.
 
 Phase 2: Qdrant Vector Database Setup
 Phase 2 focuses on setting up Qdrant, the specialized memory for your AI system. Unlike a regular database that stores text or numbers, Qdrant stores high-dimensional vectors that represent the meaning of your documents. By installing it and setting it up as a background service, we ensure your system can perform lightning-fast semantic searches to find relevant information whenever a user asks a question.
