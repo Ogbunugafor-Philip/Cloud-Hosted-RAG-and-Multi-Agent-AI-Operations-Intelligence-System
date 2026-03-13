@@ -204,10 +204,13 @@ curl http://localhost:6333
 ```
 <img width="975" height="187" alt="Image" src="https://github.com/user-attachments/assets/cafcd3f6-5ab1-4dc1-a07e-f7a3f78abadc" /> 
 
-Phase 3: Document Ingestion Pipeline
+### Phase 3: Document Ingestion Pipeline
 Phase 3 is where we build the machinery to feed your AI the organizational knowledge it needs to be smart. We will create a Python pipeline that acts like a digital shredder and translator: it opens various file types like PDFs and Word docs, extracts the raw text, cleans out the mess, and then breaks that text into small, searchable chunks. By the end of this phase, your system will be able to turn static documents into "live" data stored in Qdrant, allowing the AI to look up specific facts almost instantly.
-3.1	Write a text extractor that handles PDF, TXT, and DOCX files
+
+#### 3.1	Write a text extractor that handles PDF, TXT, and DOCX files
+
 •	Run this command to create a file called ingest.py with the extraction logic:
+```
 cat <<EOF > scripts/ingest.py
 import os
 from pypdf import PdfReader
@@ -237,9 +240,11 @@ def extract_text(file_path):
 if __name__ == "__main__":
     print("Extractor ready.")
 EOF
+```
+#### 3.2	Write a text cleaning function to remove noise and broken formatting
 
-3.2	Write a text cleaning function to remove noise and broken formatting
 •	We will add a function to scripts/ingest.py that uses Regular Expressions (regex) to scrub the text clean. Run this command to append the cleaning logic to your script:
+```
 cat <<EOF >> scripts/ingest.py
 
 import re
@@ -255,10 +260,12 @@ def clean_text(text):
 sample = "This is a   test\nwith weird   spacing."
 print(f"Cleaned: {clean_text(sample)}")
 EOF
-
-3.3	Write a chunking function that splits text into meaningful segments with overlap
+```
+#### 3.3	Write a chunking function that splits text into meaningful segments with overlap
 We can't feed a 50-page document to the AI all at once. We need to split it into smaller "chunks." We also use overlap so that the end of one chunk shares a little bit of text with the start of the next. This ensures no information is cut in half.
+
 •	Run this to add the chunking function to scripts/ingest.py:
+```
 cat <<EOF >> scripts/ingest.py
 
 def chunk_text(text, chunk_size=500, overlap=50):
@@ -275,11 +282,12 @@ long_text = "Knowledge is power. " * 50
 test_chunks = chunk_text(long_text)
 print(f"Created {len(test_chunks)} chunks.")
 EOF
-
-3.4	Tag each chunk with metadata (filename, document type, date, category)
+```
+#### 3.4	Tag each chunk with metadata (filename, document type, date, category)
 We need to attach labels to each chunk so the AI knows where the information came from (like the filename or date).
 
 •	Run this to add the metadata function to scripts/ingest.py:
+```
 cat <<EOF >> scripts/ingest.py
 
 from datetime import datetime
@@ -294,10 +302,13 @@ def create_metadata(file_name, category="General"):
 # Test metadata
 print(f"Metadata sample: {create_metadata('policy.pdf', 'HR')}")
 EOF
+```
 
-3.5	Generate embeddings for each chunk using Sentence Transformers
+#### 3.5	Generate embeddings for each chunk using Sentence Transformers
 This is where we turn text into math so the computer can understand the meaning. We will use the SentenceTransformer model we installed earlier.
+
 •	Run this to add the embedding logic to scripts/ingest.py. It will download a small, efficient model the first time it runs:
+```
 cat <<EOF >> scripts/ingest.py
 
 from sentence_transformers import SentenceTransformer
@@ -314,6 +325,7 @@ def generate_embeddings(text_chunks):
 sample_emb = generate_embeddings(["Test chunk"])
 print(f"Embedding generated. Shape: {sample_emb.shape}")
 EOF
+```
 
 
 
@@ -323,10 +335,11 @@ EOF
 
 
 
-
-3.6	Store all embeddings and metadata into Qdrant
+#### 3.6	Store all embeddings and metadata into Qdrant
 Now we need to take those numbers (the embeddings) and the labels (the metadata) and save them into the Qdrant database we set up in Phase 2.
+
 •	Run this to add the storage logic to scripts/ingest.py. We’ll use a "collection" named "ai_ops_docs":
+```
 cat <<EOF >> scripts/ingest.py
 
 from qdrant_client import QdrantClient
@@ -360,13 +373,15 @@ def store_in_qdrant(collection_name, chunks, embeddings, metadata):
 # Final Test Run
 store_in_qdrant("test_collection", ["Test chunk content"], sample_emb, {"test": "data"})
 EOF
-
-3.7	Test ingestion with sample documents from each file type
+```
+#### 3.7	Test ingestion with sample documents from each file type
 To finish Phase 3, we need to move from "test samples" to a real workflow. We’ll combine everything into a single function that processes a whole file.
-•	Run this command to replace the bottom "test" section of scripts/ingest.py with a proper production-ready function:
-# First, remove the old test lines (the ones starting with "long_text", "test_chunks", etc.)
-# Then, append this robust runner:
 
+•	Run this command to replace the bottom "test" section of scripts/ingest.py with a proper production-ready function:
+
+First, remove the old test lines (the ones starting with "long_text", "test_chunks", etc.) Then, append this robust runner:
+
+```
 cat <<EOF >> scripts/ingest.py
 
 def process_file(file_path, collection_name, category="General"):
@@ -381,11 +396,16 @@ def process_file(file_path, collection_name, category="General"):
 
 # To use this: process_file('path/to/your/file.pdf', 'ai_ops_docs')
 EOF
-Phase 4: RAG Retrieval Pipeline
+```
+
+### Phase 4: RAG Retrieval Pipeline
 Phase 4 is the "intelligence" layer where we transform your stored data into actionable answers. In this phase, we build the RAG (Retrieval-Augmented Generation) Pipeline, which acts as a bridge between your Qdrant vector database and the high-speed Cerebras LLM. We will develop the logic to turn a user's question into a mathematical vector, search for the most relevant "memories" in Qdrant, and feed that specific context into the LLM with strict instructions to answer only based on the provided facts. By the end of this phase, your system won't just find documents; it will read them, reason through them, and provide cited, accurate responses at lightning speed.
-4.1 Write a query embedding function using the same Sentence Transformer model
+
+#### 4.1 Write a query embedding function using the same Sentence Transformer model
 To search Qdrant, we must convert the user's natural language question into the same 384-dimensional vector space used for your documents. We will reuse the SentenceTransformer model to ensure the "math" matches perfectly between the question and the stored data.
+
 •	Run this command to create a new file named scripts/rag_pipeline.py with the query embedding logic:
+```
 cat <<EOF > scripts/rag_pipeline.py
 import os
 from sentence_transformers import SentenceTransformer
@@ -405,9 +425,13 @@ if __name__ == "__main__":
     vector = embed_query(test_query)
     print(f"Query embedded. Vector length: {len(vector)}")
 EOF
-4.2 Write a retrieval function that searches Qdrant and returns top K relevant chunks with similarity threshold filtering
+```
+
+#### 4.2 Write a retrieval function that searches Qdrant and returns top K relevant chunks with similarity threshold filtering
 Next, we write the function that takes that query vector and asks Qdrant to find the most similar text chunks. We will set a Top K (how many results to return) and a Similarity Threshold (to ignore results that aren't relevant enough).
+
 •	Run this to append the retrieval logic to scripts/rag_pipeline.py:
+```
 cat <<EOF > scripts/rag_pipeline.py
 import os
 from sentence_transformers import SentenceTransformer
@@ -445,9 +469,12 @@ if __name__ == "__main__":
         print(f"Top Match Score: {results[0].score}")
         print(f"Content: {results[0].payload.get('text')}")
 EOF
-4.3 Build a context assembly function that formats retrieved chunks with inline source references and handles the no-context case
+```
+#### 4.3 Build a context assembly function that formats retrieved chunks with inline source references and handles the no-context case
 Now that we can retrieve raw "points" from Qdrant, we need to format them into a clean block of text that an LLM can actually read. This function will pull the text out of the payload, add inline citations (like "[Source: policy.pdf]"), and handle cases where no relevant information was found.
+
 •	Run this command to append the assembly logic to scripts/rag_pipeline.py
+```
 cat <<EOF >> scripts/rag_pipeline.py
 
 def assemble_context(relevant_chunks):
@@ -471,16 +498,23 @@ if __name__ == "__main__":
     print("\n--- Formatted Context ---")
     print(context_string)
 EOF
-4.4 Connect Cerebras API as the LLM reasoning engine using LangChain with environment-based API key loading
+```
+#### 4.4 Connect Cerebras API as the LLM reasoning engine using LangChain with environment-based API key loading
 Now we need to connect the "voice" of your system. Cerebras offers inference at speeds that make RAG feel instant. We will use the langchain-cerebras package to integrate it.
+
 •	LangChain connector for Cerebras. Run;
+```
 pip install langchain-cerebras
- 
+```
+<img width="975" height="288" alt="Image" src="https://github.com/user-attachments/assets/77cb45d8-f98b-4536-bcca-d4e75cadca16" />
+
 •	You need to make sure your Cerebras API key is available in your environment. Run this in your terminal (replace your_api_key_here with your actual key):
+```
 export CEREBRAS_API_KEY="your_api_key_here"
-export CEREBRAS_API_KEY="csk-xy48944fxh562pvfd45n4pmcchrx8cyyp5drve4ed9kv9en3"
+```
 
 •	Append the LLM connection logic. Run this to add the Cerebras setup to scripts/rag_pipeline.py;
+```
 cat <<EOF >> scripts/rag_pipeline.py
 
 from langchain_cerebras import ChatCerebras
@@ -502,9 +536,12 @@ def test_llm_connection():
 if __name__ == "__main__":
     test_llm_connection()
 EOF
-4.5 Write the prompt template that instructs Cerebras to answer using only retrieved context, cite sources, and return an insufficient context response when needed
+```
+#### 4.5 Write the prompt template that instructs Cerebras to answer using only retrieved context, cite sources, and return an insufficient context response when needed
 The prompt is the most critical part of a RAG system. It tells the LLM to stay "inside the box" and only use the documents we provided. If the answer isn't in the context, we want it to admit it rather than making things up.
+
 •	Run this to append the prompt logic to scripts/rag_pipeline.py:
+```
 cat <<EOF >> scripts/rag_pipeline.py
 
 from langchain_core.prompts import ChatPromptTemplate
@@ -540,9 +577,13 @@ if __name__ == "__main__":
     print("\n--- LLM Response ---")
     print(generate_answer(test_q, test_c))
 EOF
-4.6 Build the full RAG chain: query → validate → embed → retrieve → filter → assemble context → prompt → generate → parse → return structured response with citations and latency
+```
+
+#### 4.6 Build the full RAG chain: query → validate → embed → retrieve → filter → assemble context → prompt → generate → parse → return structured response with citations and latency
 This is the final architectural assembly where we unify every individual component into a single, cohesive RAG engine. This master function handles the entire lifecycle of a request, starting with an input validation check before converting the user query into a vector and searching the Qdrant database. It then filters the results by relevance, assembles the context with precise citations, and feeds the formatted data to the Cerebras LLM for final generation. By structuring the code this way, we create a repeatable pipeline that not only returns an accurate answer but also provides metadata like processing latency and the number of source chunks used.
+
 •	Run this command to update your scripts/rag_pipeline.py with the complete, unified pipeline logic:
+```
 cat <<EOF > scripts/rag_pipeline.py
 import os
 import time
@@ -633,11 +674,14 @@ if __name__ == "__main__":
     print(f"Answer: {result['answer']}")
     print(f"Structured Metadata: {result['metadata']}")
 EOF
-4.7 Test the full RAG chain across three query categories: fully covered, partially covered, and no relevant context
+```
+#### 4.7 Test the full RAG chain across three query categories: fully covered, partially covered, and no relevant context
 Now that the architecture is locked in, we need to stress-test it across three specific categories to ensure the "brain" knows when to speak and when to stay silent.
-The Three Test Scenarios:
-Fully Covered: Querying data we know exists (like your "test content").
+##### The Three Test Scenarios:
+###### Fully Covered: Querying data we know exists (like your "test content").
+
 •	Run this to update the test block
+```
 cat <<EOF > scripts/rag_pipeline.py
 import os
 import time
@@ -719,21 +763,28 @@ if __name__ == "__main__":
     print(f"Sources Cited: {result['metadata']['citations']}")
     print(f"Latency: {result['metadata']['latency_seconds']}s")
 EOF
-Partially Covered: Querying something similar but not identical to see how the threshold handles it.
+```
+###### Partially Covered: Querying something similar but not identical to see how the threshold handles it.
+
 •	Run this to update your test block in the terminal:
+```
 sed -i 's/result = run_rag_pipeline("Tell me exactly what the test chunk content says.")/result = run_rag_pipeline("Does the test content mention a specific person name?")/' scripts/rag_pipeline.py
 python3 scripts/rag_pipeline.py
- 
+```
+<img width="975" height="318" alt="Image" src="https://github.com/user-attachments/assets/736c6345-5d39-457f-911a-2ae52e33b89f" /> 
 
 
 
 
 
 
-No Relevant Context: Asking a completely unrelated question (e.g., "How do I bake a cake?") to verify the system admits it doesn't know.
+###### No Relevant Context: Asking a completely unrelated question (e.g., "How do I bake a cake?") to verify the system admits it doesn't know.
+
 •	Run this to update your test block in the terminal:
-sed -i 's/result = run_rag_pipeline("Does the test content mention a specific person name?")/result = run_rag_pipeline("What is the best way to bake a chocolate cake?")/' scripts/rag_pipeline.py
+```sed -i 's/result = run_rag_pipeline("Does the test content mention a specific person name?")/result = run_rag_pipeline("What is the best way to bake a chocolate cake?")/' scripts/rag_pipeline.py
 python3 scripts/rag_pipeline.py
+```
+<img width="975" height="299" alt="Image" src="https://github.com/user-attachments/assets/b6684341-d46e-4690-9667-bcc7ca6bde21" />
  
 
 
