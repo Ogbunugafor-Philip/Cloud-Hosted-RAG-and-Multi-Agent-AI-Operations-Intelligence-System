@@ -1268,11 +1268,14 @@ if __name__ == "__main__":
     print(run_ops_intelligence("And how many days can I work from home?")["answer"])
 EOF
 ```
-Phase 6: FastAPI Backend
+### Phase 6: FastAPI Backend
 Phase 6 marks the transition of your intelligence system from a local script into a production-ready web service. By building a high-performance backend with FastAPI, you provide a standardized gateway that allows external applications, automated workflows, and front-end dashboards to communicate with your AI agents. During this phase, you will implement dedicated endpoints for document ingestion and real-time querying, while securing the system with API key authentication to ensure that only authorized users can access your organizational knowledge. This architectural layer essentially provides the "body" for your AI's "brain," enabling it to be integrated into the broader enterprise ecosystem and handle multiple concurrent requests with low latency and high reliability.
-6.1	Create the FastAPI application entry point
+
+#### 6.1	Create the FastAPI application entry point
 We will create main.py in your root project directory. This script initializes the server, defines the data models for incoming requests, and imports the robust agent logic we perfected in Phase 5.
+
 •	Run this command to build your server entry point:
+```
 cat <<EOF > main.py
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
@@ -1322,17 +1325,25 @@ if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
 EOF
+```
+
 •	Launch the Server: Run this in your terminal
+```
 python3 main.py
- 
+```
+<img width="935" height="245" alt="Image" src="https://github.com/user-attachments/assets/8c7f48c3-d216-4f81-b092-b7da9bc4f7e0" /> 
 
-6.2	Build the document upload endpoint that triggers the ingestion pipeline
+#### 6.2	Build the document upload endpoint that triggers the ingestion pipeline
 Now we need to build the "Ingestion Gate." This endpoint will allow you to send actual files (PDF, DOCX, TXT) via an API request. The server will save the file to your data/ folder and immediately trigger the Phase 3 pipeline to extract, chunk, embed, and store the data in Qdrant.
-•	To handle file uploads in FastAPI, we need the python-multipart library. Run this first:
-pip install python-multipart
- 
 
-•	Run this command to add the upload logic to your server. We use shutil to handle the file saving and then call your process_file function:
+•	To handle file uploads in FastAPI, we need the python-multipart library. Run this first:
+```
+pip install python-multipart
+```
+<img width="975" height="311" alt="Image" src="https://github.com/user-attachments/assets/ff937cb1-ded1-4896-82f8-0e6ae1f71597" /> 
+
+•	Run this command to add the upload logic to your server. We use shuttle to handle the file saving and then call your process_file function:
+```
 cat <<EOF > main.py
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from pydantic import BaseModel
@@ -1399,9 +1410,13 @@ if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
 EOF
-6.3	Build the query endpoint that triggers the RAG chain and returns answers
+```
+
+#### 6.3	Build the query endpoint that triggers the RAG chain and returns answers
 In Phase 6.3, we formalize the Query Endpoint. While we had a basic version in the previous step, we are now refining it to be the production gateway for your RAG (Retrieval-Augmented Generation) system. This endpoint is designed to receive a user's natural language question, pass it through our Multi-Agent router, and return a structured JSON response containing the answer, the agent used, and the source citations.
+
 •	Run this command to refine your query logic in main.py:
+```
 cat <<EOF > scripts/main_agent.py
 import os
 import sys
@@ -1466,9 +1481,13 @@ def run_ops_intelligence(user_query, session_id="default_user", collection="test
         }
     }
 EOF
-6.4	Build the agent task endpoint that triggers the multi-agent pipeline
+```
+
+#### 6.4	Build the agent task endpoint that triggers the multi-agent pipeline
 We’ll update main.py to add this dedicated route. This ensures that if a user specifically wants an "Executive Summary" or a "Policy Comparison," they can hit a path optimized for higher reasoning.
+
 •	Run this command to append the Task endpoint to your server:
+```
 cat <<EOF > main.py
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from pydantic import BaseModel
@@ -1536,9 +1555,12 @@ if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
 EOF
-6.5	Add request logging to save every query, response, and latency to a log file
+```
+### 6.5	Add request logging to save every query, response, and latency to a log file
 We will use a Middleware approach. Think of this as a checkpoint at the server's front door: it marks the time when a request arrives, lets the AI do its work, and then calculates the total time spent before the response leaves the building.
+
 •	Run this command to update main.py with the logging logic:
+```
 cat <<EOF > main.py
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Request
 from pydantic import BaseModel
@@ -1633,10 +1655,12 @@ if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
 EOF
-
-6.6	Add basic API key authentication to protect all endpoints
+```
+#### 6.6	Add basic API key authentication to protect all endpoints
 We will use a specialized FastAPI tool called APIKeyHeader. It ensures that every single request (Upload, Query, or Task) must include a secret key in the header, or the server will simply refuse to talk.
+
 •	Run this command to update main.py with the security gate:
+```
 cat <<EOF > main.py
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Request, Depends, Security
 from fastapi.security.api_key import APIKeyHeader
@@ -1709,10 +1733,11 @@ if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
 EOF
-
-6.7	Create a systemd service to keep FastAPI running 24/7
+```
+### 6.7	Create a systemd service to keep FastAPI running 24/7
 We’re going to tell Linux to treat your AI API as a "System Service." This means it will run silently in the background and restart itself automatically if it ever crashes.
 •	Run this command to create the configuration.
+```
 sudo cat <<EOF > /etc/systemd/system/ai_ops.service
 [Unit]
 Description=FastAPI instance for AI Ops System
@@ -1729,36 +1754,42 @@ Restart=always
 [Install]
 WantedBy=multi-user.target
 EOF
+```
 
 •	Reload, restart and enable the service. Run;
+```
 sudo systemctl daemon-reload
 sudo systemctl start ai_ops
 sudo systemctl enable ai_ops
+```
 
 •	To confirm everything is running perfectly in the background, run:
+```
 sudo systemctl status ai_ops
- 
+```
+<img width="975" height="367" alt="Image" src="https://github.com/user-attachments/assets/cc0cb7ea-80bf-4543-a08f-df8c29046aac" /> 
 
-6.8	Open the FastAPI port on the VPS firewall
+### 6.8	Open the FastAPI port on the VPS firewall
 •	Run these sequentially to open the necessary gates for your API while keeping the rest of the server locked down:
+```
 sudo ufw allow 8000/tcp
 sudo ufw allow 6333/tcp
 sudo ufw allow ssh
 sudo ufw enable
 sudo ufw status numbered
+```
+<img width="975" height="654" alt="Image" src="https://github.com/user-attachments/assets/dc9dac0d-4d5e-472f-844d-c934f9db0f31" />
 
 
 
-
-
- 
-
-Phase 7: Evaluation with RAGAS
+### Phase 7: Evaluation with RAGAS
 Phase 7 introduces a rigorous quality control layer to your AI system by leveraging the RAGAS (RAG Assessment) framework to mathematically quantify the reliability of your outputs. Moving beyond anecdotal testing, this phase implements automated metrics to evaluate Faithfulness (to ensure the AI isn't hallucinating), Answer Relevance (to confirm user needs are met), and Context Precision (to verify the vector database is retrieving the most pertinent document chunks). By systematically running your pipeline against a curated "ground truth" dataset and logging these scores into a performance CSV, you transform your development process from guesswork into a data-driven operation, ensuring that every answer provided by your multi-Agent system is both factually grounded and operationally sound.
-7.1	Prepare a test dataset of questions, ground truth answers, and source documents
+
+### 7.1	Prepare a test dataset of questions, ground truth answers, and source documents
 To evaluate a RAG system effectively, you cannot rely on vibes alone; you need a "Ground Truth" dataset. This dataset acts as the answer key that the AI's performance is graded against. For RAGAS to work, each test case must contain four specific components: the Question, the Context (the actual text from your docs), the Ground Truth (the perfect human-verified answer), and eventually, the Generated Answer from your LLM.
 
 •	Run this command to create scripts/evaluate_rag.py:
+```
 cat <<EOF > scripts/evaluate_rag.py
 import pandas as pd
 import os
@@ -1795,6 +1826,7 @@ def prepare_dataset():
 if __name__ == "__main__":
     prepare_dataset()
 EOF
+```
 
 
 
@@ -1802,14 +1834,19 @@ EOF
 
 
 
-
-7.2	Run the RAG pipeline on the test dataset and collect all responses and retrieved contexts
+### 7.2	Run the RAG pipeline on the test dataset and collect all responses and retrieved contexts
 Now that we have our "Gold Standard" (the ground truth), we need to put our AI to the test. In this step, we will loop through our test questions, pass them through the actual run_rag_pipeline we built in Phase 4, and record three things:
+
 i. The Answer: What the LLM actually said.
+
 ii. The Contexts: The specific text chunks the system retrieved from Qdrant.
+
 iii. The Latency: How long it took to get the result.
+
 We will update scripts/evaluate_rag.py to include the execution logic. This script will bridge the gap between your test data and your live RAG engine.
+
 •	Run this command to append the execution logic:
+```
 cat <<EOF >> scripts/evaluate_rag.py
 
 import sys
@@ -1852,8 +1889,10 @@ if __name__ == "__main__":
     prepare_dataset()
     run_evaluation_run()
 EOF
+```
 
 •	Run this command to update scripts/rag_pipeline.py with an updated version. This version includes the retrieved_contexts key, which is mandatory for the evaluation steps
+```
 cat <<EOF > scripts/rag_pipeline.py
 import os
 import time
@@ -1933,10 +1972,13 @@ def run_rag_pipeline(user_query, collection="test_collection"):
         }
     }
 EOF
+```
 
-7.3	Evaluate Faithfulness (does the answer match the retrieved context)
+#### 7.3	Evaluate Faithfulness (does the answer match the retrieved context)
 In RAGAS, Faithfulness is the most critical metric for enterprise AI; it measures if the answer is derived purely from the retrieved context. If the AI says something that isn't in the documents, its faithfulness score drops, signaling a "hallucination."
+
 •	We will create a script that uses the Cerebras LLM as a "Judge" to grade your results. Run this command to create scripts/ragas_scoring.py:
+```
 cat <<EOF > scripts/ragas_scoring.py
 import pandas as pd
 import os
@@ -1991,8 +2033,9 @@ def run_evaluation_metrics():
 if __name__ == "__main__":
     run_evaluation_metrics()
 EOF
-
+```
 •	Run this command to fix scripts/ragas_scoring.py:
+```
 cat <<EOF > scripts/ragas_scoring.py
 import pandas as pd
 import os
@@ -2054,9 +2097,12 @@ def run_evaluation_metrics():
 if __name__ == "__main__":
     run_evaluation_metrics()
 EOF
-7.4	Measure and log response latency for every query
+```
+### 7.4	Measure and log response latency for every query
 Before we fix the data, let's nail the Performance metric. This is much simpler because it doesn't require an LLM "judge"; it just uses a stopwatch.
+
 •	Run this command to create scripts/benchmarks.py. This will give you the "Production Readiness" numbers you need for your dashboard:
+```
 cat <<EOF > scripts/benchmarks.py
 import time
 import pandas as pd
@@ -2105,12 +2151,16 @@ def run_latency_benchmark():
 if __name__ == "__main__":
     run_latency_benchmark()
 EOF
-7.5	Save all evaluation results to a CSV for the dashboard
-Phase 8: Streamlit Monitoring Dashboard
+```
+
+### Phase 8: Streamlit Monitoring Dashboard
 Phase 8 represents the final architectural layer of the system, transforming a complex backend of vector databases and multi-agent logic into a centralized, user-friendly Command Center. By deploying an interactive Streamlit dashboard, you provide stakeholders with a real-time window into the system’s health, visualizing critical RAGAS quality scores and latency trends alongside a secure, password-protected portal for document ingestion and live querying. Implementing this as a persistent background service ensures that the intelligence platform remains accessible 24/7, bridging the gap between sophisticated AI engineering and intuitive operational decision-making.
-8.1	Create the Unified Dashboard
+
+#### 8.1	Create the Unified Dashboard
 The dashboard serves as the "brain's interface," connecting your evaluation logs, the FastAPI backend, and the end-user. By consolidating monitoring, querying, and secure ingestion into one script, we create a seamless workflow where you can oversee performance and manage organizational knowledge from a single URL.
+
 •	Run the following command to create your master dashboard.py file in your project root:
+```
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -2193,26 +2243,18 @@ elif menu == "Secure Document Upload":
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+```
 
 •	Run the below
+```
 streamlit run dashboard.py --server.port 8604 --server.address 0.0.0.0
- 
+``` 
+<img width="974" height="650" alt="Image" src="https://github.com/user-attachments/assets/ff79c1d0-a410-451d-92c0-85f9c566d67c" />
 
-8.2	Create a systemd service to keep the dashboard running 24/7
+#### 8.2	Create a systemd service to keep the dashboard running 24/7
+
 •	Create the Service File: Run this command to create the ai_dashboard.service file.
+```
 sudo cat <<EOF > /etc/systemd/system/ai_dashboard.service
 [Unit]
 Description=Streamlit Dashboard for AI Ops System
@@ -2229,26 +2271,31 @@ RestartSec=5
 [Install]
 WantedBy=multi-user.target
 EOF
-
+```
 
 
 •	Run these three commands to tell Linux to recognize, start, and auto-load the dashboard.
+```
 sudo systemctl daemon-reload
 sudo systemctl enable ai_dashboard
 sudo systemctl start ai_dashboard
+```
 
 •	Check if the dashboard is running successfully in the background:
+```
 sudo systemctl status ai_dashboard
- 
+```
+<img width="975" height="298" alt="Image" src="https://github.com/user-attachments/assets/ac3c3d24-a748-426d-a5d3-48b381104990" /> 
 
-8.3	Open the dashboard port on the VPS firewall
+#### 8.3	Open the dashboard port on the VPS firewall
 •	Run these commands;
+```
 sudo ufw allow 8604/tcp
 sudo ufw status
- 
+``` 
+<img width="975" height="590" alt="Image" src="https://github.com/user-attachments/assets/9dac50bc-e64b-49bb-b9d0-621c84b811fd" />
 
-
-Conclusion
+### Conclusion
 The successful deployment of the Cloud-Hosted RAG and Multi-Agent AI Operations Intelligence System marks a significant transition from manual information retrieval to an automated and intelligent knowledge management framework. By integrating high-performance tools such as Cerebras for reasoning and Qdrant for vector storage, the platform effectively bridges the gap between static organizational data and actionable insights. The implementation of a multi-agent architecture ensures that the system can distinguish between simple factual queries and complex analytical tasks, providing employees with a versatile assistant that enhances productivity and reduces operational bottlenecks across various departments.
 Beyond immediate functionality, the inclusion of rigorous evaluation through the RAGAS framework and a centralized Streamlit dashboard establishes a foundation for long-term reliability and continuous improvement. These monitoring tools allow for real-time visibility into system health, response accuracy, and latency, ensuring that the AI remains a trusted source of truth within the enterprise ecosystem. As organizations continue to scale their digital assets, this secure and cloud-native architecture provides the necessary infrastructure to maintain a competitive edge through sophisticated data-driven decision making and streamlined internal workflows.
 
