@@ -131,25 +131,35 @@ pip install -r requirements.txt
 - pypdf: A tool used to read and extract text from PDF documents.
 - python-docx: A library for reading and extracting text from Microsoft Word files.
 
-Phase 2: Qdrant Vector Database Setup
+### Phase 2: Qdrant Vector Database Setup
 Phase 2 focuses on setting up Qdrant, the specialized memory for your AI system. Unlike a regular database that stores text or numbers, Qdrant stores high-dimensional vectors that represent the meaning of your documents. By installing it and setting it up as a background service, we ensure your system can perform lightning-fast semantic searches to find relevant information whenever a user asks a question.
-2.1	Install Qdrant on VPS using the official binary 
-•	Run these commands one by one to download and set up the Qdrant binary on your VPS;
-# Download the latest Qdrant binary
+
+#### 2.1	Install Qdrant on VPS using the official binary 
+•	Run these commands one by one to download and set up the Qdrant binary on your VPS; Download the latest Qdrant binary
+```
 wget https://github.com/qdrant/qdrant/releases/latest/download/qdrant-x86_64-unknown-linux-gnu.tar.gz
- 
-# Extract the file 
+```
+<img width="975" height="447" alt="Image" src="https://github.com/user-attachments/assets/382a5c39-b115-46c7-939a-8b53c5f75cbc" /> 
+
+
+- Extract the file 
+```
 tar -xzf qdrant-x86_64-unknown-linux-gnu.tar.gz
-# Move it to a system folder and make it executable
+```
+- Move it to a system folder and make it executable
+```
 sudo mv qdrant /usr/local/bin/ 
 sudo chmod +x /usr/local/bin/qdrant
+```
 
-
-2.2	Configure Qdrant to run on a specific port
+#### 2.2	Configure Qdrant to run on a specific port
 •	Create a storage directory for the data. Run;
+```
 mkdir -p ~/qdrant_storage
+```
 
 •	Create the configuration file. Paste the below;
+```
 cat <<EOF > config.yaml
 storage:
   storage_path: ~/qdrant_storage
@@ -157,9 +167,10 @@ service:
   http_port: 6333
   grpc_port: 6334
 EOF
-
-2.3	Create a systemd service to keep Qdrant running 24/7
+```
+#### 2.3	Create a systemd service to keep Qdrant running 24/7
 •	To keep Qdrant running 24/7, even if your server restarts, we will create a systemd service. This acts like a "keep-alive" manager. Paste the below
+```
 sudo cat <<EOF > /etc/systemd/system/qdrant.service
 [Unit]
 Description=Qdrant Vector Database
@@ -176,19 +187,22 @@ RestartSec=5
 [Install]
 WantedBy=multi-user.target
 EOF
-
+```
 •	Now, start the service with these commands:
+```
 sudo systemctl daemon-reload
 sudo systemctl enable qdrant
 sudo systemctl start qdrant
+```
 
 
 
-
-2.4	Test Qdrant is live and accessible via its REST API
+#### 2.4	Test Qdrant is live and accessible via its REST API
 •	To finalize Phase 2, let's make sure we can actually talk to it. Run this command:
+```
 curl http://localhost:6333
- 
+```
+<img width="975" height="187" alt="Image" src="https://github.com/user-attachments/assets/cafcd3f6-5ab1-4dc1-a07e-f7a3f78abadc" /> 
 
 Phase 3: Document Ingestion Pipeline
 Phase 3 is where we build the machinery to feed your AI the organizational knowledge it needs to be smart. We will create a Python pipeline that acts like a digital shredder and translator: it opens various file types like PDFs and Word docs, extracts the raw text, cleans out the mess, and then breaks that text into small, searchable chunks. By the end of this phase, your system will be able to turn static documents into "live" data stored in Qdrant, allowing the AI to look up specific facts almost instantly.
