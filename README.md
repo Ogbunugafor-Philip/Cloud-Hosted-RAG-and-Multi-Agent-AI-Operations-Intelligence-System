@@ -788,16 +788,21 @@ python3 scripts/rag_pipeline.py
  
 
 
-Phase 5: Multi-Agent System
+### Phase 5: Multi-Agent System
 Phase 5 introduces the orchestration layer that transforms a standard retrieval pipeline into an autonomous intelligence system. By implementing a Multi-Agent architecture, the system can move beyond simple question answering to handle complex operational workflows that require reasoning and task delegation. You will develop a Router Agent to act as the central brain, determining whether an incoming request is a straightforward information lookup or a multi-step project requiring the specialized skills of a Task Agent. This phase also integrates conversation memory to ensure the AI maintains context over long interactions, allowing it to support sophisticated decision making and document synthesis across various organizational departments.
-5.1 Define the two agent roles: Router Agent and Task Agent
+
+#### 5.1 Define the two agent roles: Router Agent and Task Agent
 In this step, we define the specialized personalities and logic for our two primary agents: the Router Agent and the Task Agent. Think of the Router as the "Front Desk Manager" who assesses the complexity of an inquiry, while the Task Agent is the "Subject Matter Expert" capable of handling multi-step reasoning and synthesis.
-Agent	Role	Responsibility
-Router Agent	The Gatekeeper	Analyzes the user's intent to decide if a query can be answered by a simple RAG lookup or if it requires complex task execution.
-Task Agent	The Executor	Handles high-level requests such as "Compare the HR policies of 2024 vs 2025" or "Summarize all pending action items from these three reports."
+
+| Agent        | Role            | Responsibility                                                                 |
+|--------------|-----------------|-------------------------------------------------------------------------------|
+| Router Agent | The Gatekeeper  | Analyzes the user's intent to decide if a query can be answered by a simple RAG lookup or if it requires complex task execution. |
+| Task Agent   | The Executor    | Handles high-level requests such as "Compare the HR policies of 2024 vs 2025" or "Summarize all pending action items from these three reports." |
 
 We will use LangChain's Structured Output to ensure the Router Agent returns a machine-readable decision (either rag_pipeline or task_agent).
+
 •	Run the following command to create scripts/agents.py and define these roles:
+```
 cat <<EOF > scripts/agents.py
 import os
 from typing import Literal
@@ -843,11 +848,12 @@ if __name__ == "__main__":
     test_2 = router.invoke({"question": "Compare the 2024 budget report with the 2025 projections."})
     print(f"Complex Query Route: {test_2.datasource}")
 EOF
-
-5.2 Build the Router Agent that classifies incoming requests and decides whether to send them to the simple RAG chain or the Task Agent
+```
+#### 5.2 Build the Router Agent that classifies incoming requests and decides whether to send them to the simple RAG chain or the Task Agent
 This focuses on formalizing the Router Agent as a standalone logic module that we can plug into our FastAPI backend later.
 The goal here is to ensure the Router doesn't just output a word, but returns a clean, validated decision that our system can use to switch between different code paths.
-Run this command to finalize the scripts/router.py file. This separates the "Decision Brain" from the "Execution Body," making your system modular and easier to debug.
+- Run this command to finalize the scripts/router.py file. This separates the "Decision Brain" from the "Execution Body," making your system modular and easier to debug.
+```
 cat <<EOF > scripts/router.py
 import os
 from typing import Literal
@@ -905,11 +911,14 @@ if __name__ == "__main__":
     res_task = router.invoke({"question": "Write a 3-paragraph executive summary of the last 5 project updates."})
     print(f"Task Query -> {res_task.datasource}")
 EOF
-5.3 Build the Task Agent that handles complex multi-step requests involving multiple document collections, sequential tool use, or synthesis across sources
+```
+#### 5.3 Build the Task Agent that handles complex multi-step requests involving multiple document collections, sequential tool use, or synthesis across sources
 While the RAG pipeline is great for finding a specific needle in a haystack, the Task Agent is designed to look at the entire "haystack" and tell you what it means. In this step, we build the logic for an agent that can handle synthesis, summaries, and cross-document reasoning.
 The Task Agent uses a higher "temperature" setting (for more creative synthesis) and a specialized prompt that encourages it to look for patterns, trends, and summaries rather than just single facts.
+
 •	Run this command to create scripts/task_agent.py. This script defines the agent's persona and its 
 from the provided test content."
+```
 cat <<EOF > scripts/task_agent.py
 import os
 import sys
@@ -979,10 +988,13 @@ if __name__ == "__main__":
     print(f"Agent Response:\n{result['answer']}")
     print(f"Latency: {result['metadata']['latency_seconds']}s")
 EOF
-5.4 Write the routing logic that connects the Router Agent output to the correct downstream handler
+```
+#### 5.4 Write the routing logic that connects the Router Agent output to the correct downstream handler
 Now that the Router (5.2) and the Task Agent (5.3) are both working perfectly as separate units, we need to unify them. Phase 5.4 builds the "Central Command" function that will receive any query and decide which path to take automatically.
 Run this command to create the master script scripts/main_agent.py. This script will be the main entry point for your future API.
+
 •	Run this to create scripts/main_agent.py:
+```
 cat <<EOF > scripts/main_agent.py
 import os
 import sys
@@ -1029,10 +1041,13 @@ if __name__ == "__main__":
     res2 = execute_ai_ops("Summarize the HR policies for me.")
     print(f"Agent: {res2.get('agent_used')}\nAnswer: {res2['answer']}")
 EOF
+```
 
-5.5 Add conversation memory so context is preserved across multi-turn interactions for both the RAG chain and Task Agent
+#### 5.5 Add conversation memory so context is preserved across multi-turn interactions for both the RAG chain and Task Agent
 Currently, every time you ask a question, the AI "forgets" who you are or what you just asked. To make this a true assistant, we need Memory.
+
 •	Run this to create a simple memory utility in scripts/memory.py:
+```
 cat <<EOF > scripts/memory.py
 from langchain.memory import ConversationBufferMemory
 
@@ -1048,10 +1063,15 @@ def get_session_memory(session_id: str):
         )
     return sessions[session_id]
 EOF
-5.6 Wire the full agent pipeline: request → Router Agent → RAG chain or Task Agent → structured response
+```
+#### 5.6 Wire the full agent pipeline: request → Router Agent → RAG chain or Task Agent → structured response
+
 •	Install langchain community, run;
+```
 pip install langchain-community langchain-core
+```
 •	Run the below:
+```
 cat <<EOF > scripts/memory.py
 from langchain.memory import ConversationBufferMemory
 
@@ -1069,7 +1089,10 @@ def get_session_memory(session_id: str):
         )
     return sessions[session_id]
 EOF
+```
+
 •	Run this command to create the final version of your main execution logic. This script ensures that if you ask a follow-up question (e.g., "And what about the stipend?"), the AI knows you are still talking about the policy from the previous turn.
+```
 cat <<EOF > scripts/main_agent.py
 import os
 import sys
@@ -1127,10 +1150,12 @@ if __name__ == "__main__":
     res2 = run_ops_intelligence("And does the policy mention Wednesdays?")
     print(f"[{res2['agent']}] {res2['answer']}")
 EOF
-
-5.7 Log every routing decision alongside the query and response so routing performance can be reviewed and improved over time
+```
+#### 5.7 Log every routing decision alongside the query and response so routing performance can be reviewed and improved over time
 We will create a specialized logging utility that writes to a CSV-style log file. This makes it incredibly easy to pull the data into your Phase 8 Streamlit dashboard later.
+
 •	Run this command to update your scripts/main_agent.py with the logging integration:
+```
 cat <<EOF > scripts/logger.py
 import csv
 import os
@@ -1161,8 +1186,10 @@ if __name__ == "__main__":
     log_routing_event("Test Query", "rag_pipeline", "RAG Specialist", 0.45)
     print(f"Logged test event to {LOG_FILE}")
 EOF
+```
 
 Now, we modify the main execution function to automatically call this logger every time a request is processed. Run this to update scripts/main_agent.py:
+```
 cat <<EOF > scripts/main_agent.py
 import os
 import sys
@@ -1240,6 +1267,7 @@ if __name__ == "__main__":
     print("\n--- TURN 2: Follow-up (Context Check) ---")
     print(run_ops_intelligence("And how many days can I work from home?")["answer"])
 EOF
+```
 Phase 6: FastAPI Backend
 Phase 6 marks the transition of your intelligence system from a local script into a production-ready web service. By building a high-performance backend with FastAPI, you provide a standardized gateway that allows external applications, automated workflows, and front-end dashboards to communicate with your AI agents. During this phase, you will implement dedicated endpoints for document ingestion and real-time querying, while securing the system with API key authentication to ensure that only authorized users can access your organizational knowledge. This architectural layer essentially provides the "body" for your AI's "brain," enabling it to be integrated into the broader enterprise ecosystem and handle multiple concurrent requests with low latency and high reliability.
 6.1	Create the FastAPI application entry point
